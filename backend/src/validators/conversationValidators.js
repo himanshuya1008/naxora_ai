@@ -4,13 +4,13 @@ import { SUPPORTED_LANGUAGES } from '../ai/conversationBrain/languages.js';
 const languageSchema = z.enum(SUPPORTED_LANGUAGES).optional();
 
 export const startConversationSchema = z.object({
-  visitorId: z.string().cuid(),
-  sessionId: z.string().cuid().optional(),
+  visitorId: z.string().optional(),
+  sessionId: z.string().optional(),
   language: languageSchema,
 });
 
 export const dashboardStartConversationSchema = z.object({
-  visitorId: z.string().cuid().optional(),
+  visitorId: z.string().optional(),
   language: languageSchema,
 });
 

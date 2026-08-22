@@ -43,14 +43,41 @@ async function getAssistantModelConfig() {
 }
 
 export async function startConversation({ organizationId, visitorId, sessionId, language }) {
-  const visitor = await prisma.visitor.findFirst({ where: { id: visitorId, organizationId } });
-  if (!visitor) throw AppError.notFound('Visitor not found');
+  let visitor = null;
+  if (visitorId && typeof visitorId === 'string' && visitorId.trim()) {
+    try {
+      visitor = await prisma.visitor.findFirst({ where: { id: visitorId.trim(), organizationId } });
+    } catch {
+      visitor = null;
+    }
+  }
+
+  if (!visitor) {
+    visitor = await prisma.visitor.create({
+      data: {
+        organizationId,
+        fingerprint: `anon_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        name: 'Website Visitor',
+        company: 'Live Web Session',
+      },
+    });
+  }
+
+  let validSessionId = null;
+  if (sessionId && typeof sessionId === 'string' && sessionId.trim()) {
+    try {
+      const session = await prisma.session.findFirst({ where: { id: sessionId.trim(), organizationId } });
+      if (session) validSessionId = session.id;
+    } catch {
+      validSessionId = null;
+    }
+  }
 
   const resolvedLanguage = resolveLanguage(language);
   const languageConfig = getLanguageConfig(resolvedLanguage);
 
   const conversation = await prisma.conversation.create({
-    data: { organizationId, visitorId, sessionId, status: 'ACTIVE', channel: 'VOICE' },
+    data: { organizationId, visitorId: visitor.id, sessionId: validSessionId, status: 'ACTIVE', channel: 'VOICE' },
   });
 
   const { behaviorSummary, latestDna, lead } = await loadConversationContext(conversation.id);
