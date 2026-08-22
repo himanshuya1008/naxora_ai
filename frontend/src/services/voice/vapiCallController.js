@@ -140,25 +140,59 @@ function soundsLikeContinuation(text) {
   return (text ?? '').trim().endsWith('?');
 }
 
+function formatCleanErrorMessage(msg, fallback = 'Voice call error.') {
+  if (typeof msg !== 'string' || !msg.trim()) return fallback;
+  const lower = msg.toLowerCase();
+  if (lower.includes('notallowederror') || lower.includes('permission denied') || lower.includes('permission_denied') || lower.includes('not-allowed')) {
+    return 'Microphone permission was denied. Please allow microphone access in your browser to start the call.';
+  }
+  if (lower.includes('notfounderror') || lower.includes('deviceserror') || lower.includes('audio input not found') || lower.includes('requested device not found')) {
+    return 'No microphone was found on your device. Please connect a microphone and try again.';
+  }
+  if (lower.includes('invalid key') || lower.includes('unauthorized') || lower.includes('status code 401')) {
+    return 'Vapi authentication failed. Please verify that your VAPI_PUBLIC_KEY and VAPI_API_KEY are configured correctly.';
+  }
+  if (lower.includes('quota') || lower.includes('insufficient_quota') || lower.includes('balance') || lower.includes('credits')) {
+    return 'Vapi or model provider quota reached. Please check your Vapi credits and OpenAI/LLM provider billing.';
+  }
+  return msg;
+}
+
 // Pulls the human-readable message out of the SDK's error envelope, e.g.
 // { type: 'daily-error', error: { message, stack, name }, timestamp }
-// (built by @vapi-ai/web's internal serializeError()). err.message itself
-// is always undefined on these — the real text is nested at err.error.message.
+// or Axios response error bodies.
 function extractErrorMessage(err, fallback = 'Voice call error.') {
   if (!err) return fallback;
-  if (typeof err === 'string') return err;
-  if (typeof err?.error?.message === 'string') return err.error.message;
-  if (typeof err?.message === 'string') return err.message;
-  if (typeof err?.error === 'string') return err.error;
-  if (typeof err?.errorMsg === 'string') return err.errorMsg;
-  if (typeof err?.error === 'object' && err.error !== null) {
-    return err.error.message || err.error.error || JSON.stringify(err.error);
+  if (typeof err === 'string') return formatCleanErrorMessage(err, fallback);
+
+  let rawMsg =
+    err?.error?.response?.data?.message ||
+    err?.response?.data?.message ||
+    err?.error?.message ||
+    err?.message ||
+    err?.error?.msg ||
+    err?.msg ||
+    err?.error?.error ||
+    (typeof err?.error === 'string' ? err.error : null) ||
+    (typeof err?.errorMsg === 'string' ? err.errorMsg : null);
+
+  if (!rawMsg && typeof err?.error === 'object' && err.error !== null) {
+    try {
+      rawMsg = JSON.stringify(err.error);
+    } catch {
+      rawMsg = null;
+    }
   }
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return fallback;
+
+  if (!rawMsg) {
+    try {
+      rawMsg = JSON.stringify(err);
+    } catch {
+      rawMsg = fallback;
+    }
   }
+
+  return formatCleanErrorMessage(rawMsg, fallback);
 }
 
 export class VapiCallController {
