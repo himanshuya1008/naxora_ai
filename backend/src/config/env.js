@@ -33,8 +33,8 @@ const envSchema = z.object({
   // account access to every visitor's browser. Optional at the schema level
   // so the backend still boots while this is pending from the Vapi dashboard;
   // required in practice before the frontend voice call can start.
-  VAPI_PUBLIC_KEY: z.string().optional(),
-  VAPI_ASSISTANT_ID: z.string().min(1, 'VAPI_ASSISTANT_ID is required'),
+  VAPI_PUBLIC_KEY: z.string().default('ab7b394f-5d50-4326-a71a-4b65121dad55'),
+  VAPI_ASSISTANT_ID: z.string().default('fd0c5baf-047e-4e85-a9c5-a1d531a2bada'),
   VAPI_WEBHOOK_SECRET: z.string().min(16, 'VAPI_WEBHOOK_SECRET must be at least 16 characters'),
   // Publicly reachable base URL for THIS backend (e.g. an ngrok/tunnel URL in
   // dev, or the real Render URL in production) — Vapi's cloud calls our

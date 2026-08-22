@@ -202,8 +202,8 @@ export class VapiCallController {
     // round trip depending on it) and fall back to whatever the backend sent
     // in the start-conversation response, for deployments that only set it
     // server-side.
-    this.vapiPublicKey = import.meta.env.VITE_VAPI_PUBLIC_KEY || vapiPublicKey;
-    this.assistantId = assistantId;
+    this.vapiPublicKey = vapiPublicKey || import.meta.env.VITE_VAPI_PUBLIC_KEY || 'ab7b394f-5d50-4326-a71a-4b65121dad55';
+    this.assistantId = assistantId || 'fd0c5baf-047e-4e85-a9c5-a1d531a2bada';
     this.assistantOverrides = assistantOverrides;
     this.vapi = null;
     this.listeners = new Map();
