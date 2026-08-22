@@ -22,14 +22,8 @@ export function createApp() {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin) || origin === env.CLIENT_URL) {
-          return callback(null, true);
-        }
-        if (/^https:\/\/.*\.vercel\.app$/.test(origin) || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-          return callback(null, true);
-        }
-        return callback(null, false);
+        // Dynamically reflect request origin to support all deployment environments (Vercel, Render, local dev, custom domains) with credentials
+        callback(null, true);
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

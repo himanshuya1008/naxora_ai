@@ -6,8 +6,10 @@ import { useVisitorAuthStore } from '../store/visitorAuthStore.js';
 // silently attach the admin's bearer token to visitor requests whenever an
 // admin session also exists in the same browser, breaking the "completely
 // separate auth flows" requirement. This one reads useVisitorAuthStore only.
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
 const visitorHttpClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL,
   withCredentials: true, // send the httpOnly visitor refresh-token cookie
 });
 
