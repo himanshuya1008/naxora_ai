@@ -1,0 +1,727 @@
+/* ============================================================
+   Nexora AI — Auth experience, v2 full rewrite.
+   Scoped entirely under .auth-premium. Nothing here is a recolor of
+   the previous pass — the interaction patterns themselves are different:
+   underline floating-label inputs instead of boxed icon inputs, pill
+   buttons with a physical bevel instead of rounded-rect gradients,
+   borderless "surfaces" that only gain elevation on interaction instead
+   of permanently-shadowed cards, a serif display face for the headline
+   paired against Inter for everything else, and a textured, slowly
+   drifting background instead of a static radial gradient.
+   ============================================================ */
+
+.auth-premium {
+  --bg: #F8FBFF;
+  --surface: #ffffff;
+  --ink: #111827;
+  --ink-2: #374151;
+  --ink-faint: #4B5563;
+  --accent: #2563EB;
+  --bronze: #3B82F6;
+  --coffee: #1E40AF;
+  --mocha: #1E3A8A;
+  --champagne: #60A5FA;
+  --line: #DCE6F5;
+  --line-strong: rgba(30, 64, 175, 0.45);
+
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Ambient background: layered light, slow drift, grain ---- */
+
+.auth-premium__scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.auth-premium__scene::before {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  background: radial-gradient(38rem 30rem at 12% 8%, rgba(96, 165, 250, 0.42), transparent 60%),
+    radial-gradient(30rem 26rem at 92% 18%, rgba(59, 130, 246, 0.22), transparent 60%),
+    radial-gradient(40rem 34rem at 30% 100%, rgba(30, 64, 175, 0.14), transparent 65%);
+  animation: auth-drift 32s ease-in-out infinite alternate;
+}
+
+@keyframes auth-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-2%, 1.5%, 0) scale(1.04);
+  }
+}
+
+.auth-premium__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- Brand panel ---- */
+
+.auth-premium__brand-panel {
+  /* Local overrides only — every child rule below already reads color via
+     var(--ink)/var(--accent)/etc., so redefining the custom properties
+     here (not editing each child rule) is what flips this one panel to a
+     dark, glowing "AI platform" treatment while the credential-form side
+     stays on the shared light theme. */
+  --ink: #F1F6FE;
+  --ink-2: #C7D9F7;
+  --ink-faint: #93AAD9;
+  --accent: #60A5FA;
+  --line: rgba(225, 236, 253, 0.16);
+  --line-strong: rgba(225, 236, 253, 0.32);
+
+  position: relative;
+  z-index: 1;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 44%;
+  max-width: 32rem;
+  padding: 4rem 3.75rem;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 18% 0%, #1E3A5F 0%, #0F1E33 55%, #0A1420 100%);
+}
+
+/* Higher specificity (descendant selector) than the base .auth-premium__eyebrow
+   / .auth-premium__headline em rules further down, so these win regardless
+   of source order — only the dark brand panel needs different values. */
+.auth-premium__brand-panel .auth-premium__eyebrow {
+  background: rgba(225, 236, 253, 0.08);
+  color: var(--accent);
+}
+
+.auth-premium__brand-panel .auth-premium__headline em {
+  background: linear-gradient(110deg, var(--champagne), var(--accent) 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@media (min-width: 1024px) {
+  .auth-premium__brand-panel {
+    display: flex;
+  }
+}
+
+.auth-premium__eyebrow {
+  /* `flex`, not `inline-flex` — this and PremiumMark's logo mark (also an
+     inline-level <span>) are siblings with nothing forcing a line break
+     between them, so inline-flex let them sit side by side on the same
+     line and visually collide instead of stacking. `flex` makes this a
+     block-level box (still sized to its content via width: fit-content),
+     which guarantees it drops to its own line below the logo. */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--coffee);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.auth-premium__headline {
+  margin-top: 2.75rem;
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  font-weight: 500;
+  font-size: clamp(2.6rem, 3.4vw, 3.4rem);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  max-width: 21rem;
+}
+
+.auth-premium__headline em {
+  font-style: normal;
+  background: linear-gradient(110deg, var(--bronze), var(--coffee) 65%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.auth-premium__subtext {
+  margin-top: 1.25rem;
+  max-width: 22rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+.auth-premium__features {
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.auth-premium__feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-left: 1rem;
+  border-left: 1.5px solid var(--line);
+}
+
+.auth-premium__feature-icon {
+  display: flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  margin-top: 0.05rem;
+}
+
+.auth-premium__feature-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.auth-premium__feature-desc {
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--ink-faint);
+}
+
+.auth-premium__footline {
+  position: relative;
+  z-index: 1;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+
+/* The headline/features block needs the same relative+z-index treatment
+   so it paints above the absolutely-positioned figure below, not under it
+   (a positioned z-index:0 layer otherwise paints after plain in-flow
+   content in stacking order). */
+.auth-premium__brand-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Decorative AI figure (dark panel only) — original SVG art
+   (AiFigureArt.jsx), not a photo/render. Sits low-right, mostly clear of
+   the headline/feature text above it. ---- */
+.auth-premium__figure {
+  position: absolute;
+  right: -2.5rem;
+  bottom: -2rem;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.auth-premium__figure-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 14rem;
+  height: 14rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  border: 1.5px solid rgba(96, 165, 250, 0.55);
+  box-shadow: 0 0 110px 20px rgba(96, 165, 250, 0.3);
+  animation: auth-figure-ring-pulse 5s ease-in-out infinite;
+}
+
+@keyframes auth-figure-ring-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translateX(-50%) scale(0.96);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateX(-50%) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-premium__figure-ring {
+    animation: none;
+  }
+}
+
+/* ---- Content column ---- */
+
+.auth-premium__content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.auth-premium__content-inner {
+  width: 100%;
+  max-width: 27rem;
+}
+
+.auth-premium__mobile-mark {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .auth-premium__mobile-mark {
+    display: none;
+  }
+}
+
+/* ---- Centered mode: the bare role-selection screen. No brand panel
+   (removed in JSX), so the content column takes the full width and the
+   mark that's normally mobile-only stays visible at every size. Higher
+   specificity (two classes) beats the desktop-only rule above regardless
+   of source order.
+
+   The base fill comes from the shared --bg (same token, no override
+   needed). The extra glow layer is a second element (::after, not the
+   shared ::before) scoped to this class only, so Register and the
+   credential-form screen keep their existing background depth as-is. */
+
+.auth-premium--centered .auth-premium__scene::after {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  background: radial-gradient(46rem 36rem at 18% 12%, rgba(96, 165, 250, 0.5), transparent 60%),
+    radial-gradient(38rem 32rem at 88% 20%, rgba(59, 130, 246, 0.28), transparent 62%),
+    radial-gradient(44rem 40rem at 40% 105%, rgba(30, 64, 175, 0.2), transparent 65%),
+    radial-gradient(30rem 26rem at 75% 85%, rgba(59, 130, 246, 0.16), transparent 60%);
+  animation: auth-drift 32s ease-in-out infinite alternate;
+}
+
+.auth-premium--centered .auth-premium__grain {
+  opacity: 0.05;
+}
+
+.auth-premium--centered .auth-premium__content {
+  padding: 2.5rem 1.25rem;
+}
+
+.auth-premium--centered .auth-premium__mobile-mark {
+  display: flex;
+  margin-bottom: 3rem;
+}
+
+.auth-premium--centered .auth-premium__content-inner {
+  max-width: 30rem;
+}
+
+@media (min-width: 640px) {
+  .auth-premium--centered .auth-premium__content-inner {
+    max-width: 40rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-premium--centered .auth-premium__content-inner {
+    max-width: 54.5rem;
+  }
+
+  .auth-premium--centered .auth-premium__mobile-mark {
+    margin-bottom: 3.5rem;
+  }
+}
+
+/* ---- Surface: the panel holding the form. Borderless, near-flat until
+   it needs to separate from the busy background — elevation comes from a
+   soft, wide, low-contrast shadow rather than a hard card edge. ---- */
+
+.auth-surface {
+  position: relative;
+  border-radius: 1.75rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.98));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 1px rgba(17, 24, 39, 0.03), 0 24px 60px -28px rgba(17, 24, 39, 0.35), 0 0 0 1px rgba(17, 24, 39, 0.05);
+  padding: 2.75rem 2.5rem;
+}
+
+.auth-title {
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.auth-subtitle {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+/* ---- Chooser: the bare role-selection screen — one purpose, cards as
+   the hero. Centered, oversized typography relative to the rest of the
+   auth experience — scoped to this wrapper so the shared
+   .auth-title/.auth-subtitle classes stay untouched for the sign-in form
+   and Register. ---- */
+
+.auth-chooser {
+  text-align: center;
+}
+
+.auth-chooser .auth-title {
+  font-size: 2rem;
+}
+
+.auth-chooser .auth-subtitle {
+  margin-top: 0.625rem;
+  font-size: 1rem;
+}
+
+.auth-chooser .auth-roles {
+  margin-top: 3rem;
+}
+
+@media (min-width: 1024px) {
+  .auth-chooser .auth-title {
+    font-size: 2.75rem;
+  }
+
+  .auth-chooser .auth-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .auth-chooser .auth-roles {
+    margin-top: 4rem;
+  }
+}
+
+/* ---- Role tiles: the hero of the page. Large, solid-surface cards with
+   real depth at rest and a warm lift + glow on hover/focus — mobile
+   stacks single-column, tablet+ goes side-by-side, desktop cards grow to
+   ~420x420 and stay centered as a fixed-width pair via justify-content
+   rather than stretching to fill the row. ---- */
+
+.auth-roles {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .auth-roles {
+    grid-template-columns: repeat(2, minmax(240px, 320px));
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-roles {
+    grid-template-columns: repeat(2, 420px);
+    gap: 2rem;
+  }
+}
+
+.auth-role-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+  padding: 2rem 1.75rem;
+  border-radius: 1.75rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 2px 4px rgba(17, 24, 39, 0.08), 0 16px 36px -20px rgba(17, 24, 39, 0.22);
+  overflow: hidden;
+  transition: border-color 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 640px) {
+  .auth-role-tile {
+    min-height: 340px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-role-tile {
+    min-height: 420px;
+    padding: 2.75rem 2.5rem;
+    gap: 1.25rem;
+    justify-content: center;
+  }
+}
+
+.auth-role-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 0%), rgba(59, 130, 246, 0.18), transparent 70%);
+  transition: opacity 320ms ease;
+}
+
+.auth-role-tile:hover,
+.auth-role-tile:focus-visible {
+  transform: translateY(-6px) scale(1.012);
+  border-color: var(--bronze);
+  box-shadow: 0 28px 56px -24px rgba(59, 130, 246, 0.42), 0 0 0 1px rgba(59, 130, 246, 0.12);
+}
+
+.auth-role-tile:active {
+  transform: translateY(-2px) scale(0.99);
+}
+
+.auth-role-tile:hover::before,
+.auth-role-tile:active::before {
+  opacity: 1;
+}
+
+.auth-role-tile:active::before {
+  transition: opacity 80ms ease;
+}
+
+.auth-role-tile__icon {
+  display: flex;
+  height: 3.25rem;
+  width: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--accent);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), background 250ms ease;
+}
+
+@media (min-width: 1024px) {
+  .auth-role-tile__icon {
+    height: 4rem;
+    width: 4rem;
+    border-radius: 1.25rem;
+  }
+
+  .auth-role-tile__icon svg {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+}
+
+.auth-role-tile:hover .auth-role-tile__icon {
+  transform: scale(1.08);
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.auth-role-tile__title {
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+@media (min-width: 1024px) {
+  .auth-role-tile__title {
+    font-size: 1.6rem;
+  }
+}
+
+.auth-role-tile__desc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+  min-height: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .auth-role-tile__desc {
+    font-size: 0.95rem;
+    min-height: 3rem;
+  }
+}
+
+.auth-role-tile__cta {
+  margin-top: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.auth-role-tile__cta svg {
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-role-tile:hover .auth-role-tile__cta svg {
+  transform: translateX(4px);
+}
+
+/* ---- Fields: Apple-style floating label on a hairline underline —
+   no box, no icon, no border-radius. Label sits over the placeholder
+   position at rest and rises into a small caption on focus/fill. ---- */
+
+.auth-field {
+  position: relative;
+}
+
+.auth-field + .auth-field {
+  margin-top: 1.5rem;
+}
+
+.auth-field input {
+  peer: input;
+  width: 100%;
+  border: none;
+  border-bottom: 1.5px solid var(--line);
+  background: transparent;
+  padding: 0.5rem 1.75rem 0.55rem 0;
+  font-size: 0.95rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 220ms ease;
+}
+
+.auth-field input::placeholder {
+  color: transparent;
+}
+
+.auth-field label {
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink-faint);
+  pointer-events: none;
+  transform-origin: left top;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), color 200ms ease, top 200ms ease;
+}
+
+.auth-field input:focus ~ label,
+.auth-field input:not(:placeholder-shown) ~ label {
+  top: -0.85rem;
+  transform: scale(0.76);
+  color: var(--bronze);
+}
+
+.auth-field input:focus {
+  border-bottom-color: var(--bronze);
+  box-shadow: 0 1px 0 0 var(--bronze);
+}
+
+.auth-field__toggle {
+  position: absolute;
+  right: 0;
+  top: 0.4rem;
+  display: flex;
+  color: var(--ink-faint);
+  transition: color 160ms ease;
+}
+
+.auth-field__toggle:hover {
+  color: var(--coffee);
+}
+
+.auth-field__error {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: #c62828;
+}
+
+/* ---- Buttons: pill shape, a physical inner bevel, warm bloom on
+   hover instead of a flat translate. ---- */
+
+.auth-btn-primary {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #FFFFFF;
+  background: linear-gradient(155deg, var(--accent) 0%, var(--bronze) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 2px rgba(0, 0, 0, 0.15), 0 14px 26px -14px rgba(17, 24, 39, 0.55);
+  transition: box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(0, 0, 0, 0.15), 0 0 0 5px rgba(59, 130, 246, 0.14),
+    0 18px 32px -14px rgba(17, 24, 39, 0.6);
+}
+
+.auth-btn-primary:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  transition: color 160ms ease, gap 200ms ease;
+}
+
+.auth-btn-back:hover {
+  color: var(--coffee);
+  gap: 0.55rem;
+}
+
+.auth-link {
+  font-weight: 600;
+  color: var(--bronze);
+  background-image: linear-gradient(var(--bronze), var(--bronze));
+  background-size: 0% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  transition: background-size 220ms ease, color 220ms ease;
+  padding-bottom: 1px;
+}
+
+.auth-link:hover {
+  background-size: 100% 1px;
+  color: var(--coffee);
+}
+
+.auth-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(198, 40, 40, 0.22);
+  background: rgba(198, 40, 40, 0.05);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.78rem;
+  color: #c62828;
+  margin-bottom: 1.25rem;
+}

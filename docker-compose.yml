@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexora_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: sales_intelligence
+      POSTGRES_USER: nexora_user
+      POSTGRES_PASSWORD: nexora_secure_password_123
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nexora_user -d sales_intelligence']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexora_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '5000:5000'
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://nexora_user:nexora_secure_password_123@postgres:5432/sales_intelligence?schema=public
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5000}
+      JWT_SECRET: ${JWT_SECRET:-nexora_jwt_super_secret_production_key_123}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-nexora_jwt_refresh_super_secret_key_123}
+      VAPI_WEBHOOK_SECRET: ${VAPI_WEBHOOK_SECRET:-nexora_vapi_webhook_secret_key_123}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      VAPI_API_KEY: ${VAPI_API_KEY}
+      VAPI_PUBLIC_KEY: ${VAPI_PUBLIC_KEY}
+      VAPI_ASSISTANT_ID: ${VAPI_ASSISTANT_ID}
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-21m00Tcm4TlvDq8ikWAM}
+
+volumes:
+  postgres_data:

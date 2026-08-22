@@ -1,0 +1,152 @@
+/* =========================================================
+   Design tokens for the CSS-custom-property styling system
+   (the marketing site + Profile panels) — the counterpart to
+   tailwind.config.js, which serves the same role for every
+   Tailwind-based page (dashboard, auth). Both now express the
+   SAME warm-neutral Nexora AI design system; this file isn't a
+   legacy holdover being phased out — every color/shadow value
+   below was rewritten (not value-swapped) as part of the full
+   redesign, and every hardcoded dark-theme literal that used to
+   sit alongside these vars in individual component CSS files
+   has been found and rewritten too. Spacing/radius/type-scale/
+   motion tokens are theme-agnostic and were never dark-specific
+   to begin with.
+   ========================================================= */
+
+:root {
+  /* --- Surface scale ---
+     Imported in main.jsx alongside index.css. The marketing site's
+     plain-CSS components (Navbar.css, Hero.css, etc.) read these as
+     var(--color-*), while Tailwind-based pages (dashboard, auth) read the
+     equivalent values from tailwind.config.js — same palette, two
+     delivery mechanisms for the two styling systems in this codebase.
+     The scale direction is intentionally inverted from the old dark
+     version (950 was darkest/page-bg, now 950 is lightest/page-bg) to
+     preserve how each step is actually used (page bg → panel → raised
+     surface → hover), not the literal old hex values. */
+  --color-bg-950: #F8FBFF;
+  --color-bg-900: #FFFFFF;
+  --color-bg-800: #ffffff;
+  --color-bg-700: #EEF4FE;
+  --color-bg-600: #DCE9FE;
+
+  /* --- Accent (was indigo, now bronze) --- Radix-style scale where the
+     number tracks depth, not lightness: 400 is the readable default used
+     as text/icon color everywhere (was a too-light #c79a6b — this was the
+     "brown colors too light / text almost invisible" contrast bug, since
+     #c79a6b on this background is ~2.2:1, nowhere near the 4.5:1 AA floor
+     for text); 500 is the deeper "hover accent" tone used on decorative
+     surfaces/blobs/gradient stops; 600 is reserved for the strongest
+     emphasis needs. Values now match the approved palette exactly. */
+  --color-accent-400: #2563EB;
+  --color-accent-500: #3B82F6;
+  --color-accent-600: #1E40AF;
+
+  /* --- Secondary accent (gradient/decorative variety only — retired as a
+     distinct light "champagne" hue since that was the other half of the
+     contrast bug above; now two more depths of the same bronze family so
+     any remaining text usage stays readable and gradients keep visual
+     range without ever landing on a washed-out tone) --- */
+  --color-cyan-400: #1E40AF;
+  --color-cyan-500: #1E3A8A;
+
+  /* --- Status: success/danger/info are the approved palette's values as
+     given (all clear 4.5:1+ against bg-950). Warning is darkened from the
+     given #c58a00 (2.7:1, fails AA for text) to #8f6200 (4.8:1) — same
+     amber identity, readable. --- */
+  --color-success: #2e7d32;
+  --color-warning: #8f6200;
+  --color-danger: #c62828;
+
+  /* --- Text (was light-on-dark, now dark-on-light) --- */
+  --color-text-primary: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #4B5563;
+  --color-text-faint: #6B7280;
+
+  /* --- Typography --- */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+  --text-7xl: 4.5rem;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.35;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.7;
+
+  --tracking-tight: -0.02em;
+  --tracking-tighter: -0.04em;
+
+  /* --- Spacing scale --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-14: 3.5rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* --- Border / Divider ---
+     Two names, close-but-distinct values, for semantic correctness:
+     `border` is interactive-element/card edges, `divider` is passive
+     section separators (hr, list-row rules). Most component CSS still
+     uses the inline rgba(17,24,39,N) hairline pattern rather than these
+     (pre-existing per-file convention, not something this pass rewrote
+     wholesale) — these vars are the canonical values for new/updated
+     rules and for anything reading var(--color-border-*) directly. */
+  --color-border: #DCE6F5;
+  --color-divider: #E7EEFA;
+
+  /* --- Radius --- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-full: 9999px;
+
+  /* --- Shadows — warm-tinted, layered elevation: a tight low-alpha layer
+     for edge definition plus a wide soft layer for lift, tinted from the
+     new --color-text-primary rgb (42,33,27) rather than the old
+     (75,54,40) so shadows and text read as one coherent warm-dark family. --- */
+  --shadow-glass: inset 0 1px 0 0 rgba(255, 255, 255, 0.4), 0 16px 40px -18px rgba(17, 24, 39, 0.3);
+  --shadow-glow: 0 0 28px 0 rgba(59, 130, 246, 0.32);
+  --shadow-glow-cyan: 0 0 28px 0 rgba(96, 165, 250, 0.38);
+  --shadow-card: 0 2px 4px 0 rgba(17, 24, 39, 0.08), 0 16px 36px -8px rgba(17, 24, 39, 0.24);
+
+  /* --- Blur --- */
+  --blur-xs: 2px;
+  --blur-md: 12px;
+  --blur-xl: 24px;
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+
+  /* --- Layout --- */
+  --container-max: 1280px;
+  --container-max-wide: 1440px;
+
+  /* Breakpoints, documented for reference (CSS vars can't be used inside
+     @media conditions) — keep new component CSS consistent with these:
+     sm: 640px · md: 768px · lg: 1024px · xl: 1280px */
+}

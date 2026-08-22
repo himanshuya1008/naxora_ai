@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm view *)",
+      "Bash(jobs -l)",
+      "Bash(npm audit *)",
+      "Bash(python3 -c ' *)",
+      "Bash(:)",
+      "Bash(npm run *)",
+      "Bash(node -e \"import\\('./src/app.js'\\).then\\(\\(\\) => { console.log\\('BACKEND OK'\\); process.exit\\(0\\); }\\).catch\\(\\(e\\) => { console.error\\('FAILED:', e\\); process.exit\\(1\\); }\\)\")",
+      "Bash(curl -sf -m 3 http://localhost:5173)",
+      "Read(//home/arpita/.cache/ms-playwright/**)",
+      "Read(//home/arpita/.npm/_npx/e41f203b7505f1fb/node_modules/playwright-core/**)",
+      "Bash(curl -sf http://localhost:5173)",
+      "Bash(curl -sf http://localhost:5000/api/health)",
+      "Bash(node -e \"console.log\\(require\\('/home/arpita/.npm/_npx/e41f203b7505f1fb/node_modules/playwright-core/package.json'\\).version\\)\")",
+      "Bash(node nexora_login_probe.mjs)",
+      "Bash(ldd /home/arpita/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome)",
+      "Bash(sudo -n true)",
+      "Bash(find / -maxdepth 6 -iname \"libnspr4.so*\")",
+      "Bash(find / -maxdepth 6 -iname \"libnss3.so*\")"
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+# =========================================================
+# Dependencies
+# =========================================================
+node_modules/
+**/node_modules/
+
+# =========================================================
+# Environment files — never commit real secrets.
+# Broad patterns first, then explicit exceptions for the
+# checked-in *.example templates (no real credentials in
+# those, safe and intended to be tracked for onboarding).
+# =========================================================
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+!.env.*.example
+!**/.env.*.example
+
+# =========================================================
+# Build output
+# =========================================================
+dist/
+build/
+**/dist/
+**/build/
+.next/
+**/.next/
+
+# =========================================================
+# Logs
+# =========================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================================================
+# Caches
+# =========================================================
+.cache/
+**/.cache/
+.eslintcache
+**/.eslintcache
+.turbo/
+**/.turbo/
+
+# =========================================================
+# Testing
+# =========================================================
+coverage/
+**/coverage/
+
+# =========================================================
+# Prisma / local databases
+# =========================================================
+backend/prisma/migrations/dev.db
+backend/prisma/*.db
+*.sqlite
+*.sqlite3
+
+# =========================================================
+# Deployment tooling
+# =========================================================
+.vercel/
+**/.vercel/
+
+# =========================================================
+# Editor / OS
+# =========================================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# =========================================================
+# Vite
+# =========================================================
+frontend/.vite/
+
+# =========================================================
+# Secrets, keys, and certificates — belt-and-suspenders on
+# top of the .env rules above, in case a credential ever
+# ends up in a differently-named file.
+# =========================================================
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*credentials*.json
+*service-account*.json

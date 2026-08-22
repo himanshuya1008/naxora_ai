@@ -1,0 +1,43 @@
+.testimonial-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  background: rgba(17, 24, 39, 0.06);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--shadow-glass);
+}
+
+.testimonial-card__icon {
+  color: var(--color-accent-400);
+  opacity: 0.6;
+}
+
+.testimonial-card__quote {
+  flex: 1;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+}
+
+.testimonial-card__attribution {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(17, 24, 39, 0.14);
+}
+
+.testimonial-card__role {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.testimonial-card__company {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}

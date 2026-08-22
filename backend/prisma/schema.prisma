@@ -1,0 +1,671 @@
+// =========================================================
+// AI Intent-Aware Sales Intelligence Platform — Database Schema
+// =========================================================
+// Multi-tenant: every visitor-facing entity is scoped to an Organization
+// so the platform can serve multiple customer companies from one deployment.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================
+// TENANCY & AUTH
+// =========================================================
+
+enum OrganizationPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model Organization {
+  id        String           @id @default(cuid())
+  name      String
+  slug      String           @unique
+  plan      OrganizationPlan @default(FREE)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  users               User[]
+  apiKeys             ApiKey[]
+  visitors            Visitor[]
+  sessions            Session[]
+  behaviorEvents      BehaviorEvent[]
+  customerDNAs        CustomerDNA[]
+  conversations       Conversation[]
+  leads               Lead[]
+  customerDnaProfiles CustomerDnaProfile[]
+
+  @@index([slug])
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  SALES_REP
+  VIEWER
+}
+
+model User {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(SALES_REP)
+
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  assignedConversations Conversation[] @relation("AssignedRep")
+  ownedLeads            Lead[]         @relation("LeadOwner")
+
+  @@index([organizationId])
+}
+
+// Scoped, revocable keys used by the frontend tracking snippet / API clients
+// to authenticate against a specific organization (instead of one shared secret).
+enum ApiKeyType {
+  TRACKING_PUBLIC
+  SERVER
+}
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  key        String     @unique
+  label      String
+  type       ApiKeyType @default(TRACKING_PUBLIC)
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([organizationId])
+  @@index([key])
+}
+
+// =========================================================
+// VISITOR & BEHAVIOR TRACKING
+// =========================================================
+
+model Visitor {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Anonymous fingerprint (cookie/localStorage id) until identified
+  fingerprint String
+  email       String?
+  name        String?
+  company     String?
+  industry    String?
+  companySize CompanySize?
+
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  // --- Visitor self-service auth (V2) — additive to the anonymous-tracking
+  // fields above, not a separate account table: a Visitor row starts life
+  // anonymous (fingerprint only) and can be "claimed" via register(), which
+  // upgrades the existing row in place so prior behavior/session/conversation
+  // history stays linked instead of orphaning under a new id. Deliberately
+  // NOT unique on email at the DB level — many anonymous rows may share a
+  // null email, and enforcing "one registered account per email" is done in
+  // visitorAuthController (matches how User registration checks first,
+  // rather than relying on a DB constraint). Completely separate from
+  // User/UserRole — a Visitor is never an admin-side principal.
+  passwordHash String?
+  isRegistered Boolean   @default(false)
+  lastLoginAt  DateTime?
+
+  // Live, cheap-to-query snapshot of the heuristic Behavior Intelligence Engine
+  // output — updated synchronously on every event batch so the dashboard can
+  // list/sort/filter visitors without recomputing behavior on every request.
+  // The full qualitative profile (with LLM reasoning) lives in CustomerDNA.
+  interestScore Int           @default(0)
+  decisionStage DecisionStage @default(AWARENESS)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions       Session[]
+  behaviorEvents BehaviorEvent[]
+  customerDNAs   CustomerDNA[]
+  conversations  Conversation[]
+  leads          Lead[]
+
+  @@unique([organizationId, fingerprint])
+  @@index([organizationId, lastSeenAt])
+  @@index([organizationId, interestScore])
+}
+
+enum DecisionStage {
+  AWARENESS
+  CONSIDERATION
+  DECISION
+}
+
+enum DeviceType {
+  DESKTOP
+  MOBILE
+  TABLET
+  UNKNOWN
+}
+
+model Session {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  visitorId      String
+  visitor        Visitor      @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  referrer    String?
+  landingPage String?
+  userAgent   String?
+  deviceType  DeviceType @default(UNKNOWN)
+  country     String?
+  region      String?
+
+  pageViewCount   Int   @default(0)
+  scrollDepthAvg  Float @default(0)
+  durationSeconds Int   @default(0)
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  behaviorEvents BehaviorEvent[]
+  conversations  Conversation[]
+
+  @@index([organizationId, visitorId])
+  @@index([visitorId, startedAt])
+}
+
+enum BehaviorEventType {
+  PAGE_VIEW
+  SCROLL_DEPTH
+  CLICK
+  DOWNLOAD
+  SEARCH
+  PRICING_VIEW
+  ENTERPRISE_VIEW
+  FAQ_VIEW
+  CASE_STUDY_VIEW
+  PRODUCT_VIEW
+  FORM_SUBMIT
+  VIDEO_PLAY
+  SERVICE_VIEW
+  DEMO_REQUEST
+}
+
+model BehaviorEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  visitorId      String
+  visitor        Visitor      @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  sessionId      String
+  session        Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  type  BehaviorEventType
+  page  String
+  label String? // e.g. button name, downloaded file, search term
+  value Float? // e.g. scroll % or time-on-page in seconds
+
+  metadata Json? // free-form structured payload (kept flexible on purpose — event
+  // shapes evolve fast; a strict column set would need a migration per new signal)
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([visitorId, occurredAt])
+  @@index([organizationId, type, occurredAt])
+}
+
+// =========================================================
+// CUSTOMER DNA
+// =========================================================
+// Append-only: every re-computation inserts a new row (version++) instead of
+// overwriting, so the DNA's evolution across a visitor's journey is preserved
+// for the Conversation Brain and for the final report's "DNA history" view.
+
+enum IntentLevel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum SensitivityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum KnowledgeLevel {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+enum DecisionSpeed {
+  SLOW
+  MODERATE
+  FAST
+}
+
+// DISC-style framework — gives the strategy engine a structured axis to branch
+// sales tactics on, instead of an unstructured free-text "style" field.
+enum CommunicationStyle {
+  ANALYTICAL
+  DRIVER
+  EXPRESSIVE
+  AMIABLE
+}
+
+enum CompanySize {
+  SOLO
+  SMALL
+  MID_MARKET
+  ENTERPRISE
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model CustomerDNA {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  visitorId      String
+  visitor        Visitor      @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  version Int @default(1)
+
+  buyingIntent       IntentLevel
+  interestScore      Int // 0-100
+  budgetSensitivity  SensitivityLevel
+  technicalKnowledge KnowledgeLevel
+  decisionSpeed      DecisionSpeed
+  communicationStyle CommunicationStyle
+  industry           String?
+  companySize        CompanySize?
+  likelyObjections   Json // string[] of predicted objection categories
+  riskLevel          RiskLevel
+  personality        String?
+
+  // Raw LLM reasoning trace behind this profile version — kept for
+  // explainability/audit ("why did the AI think this?") in the sales report.
+  reasoning Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([visitorId, createdAt])
+  @@index([organizationId, interestScore])
+}
+
+// =========================================================
+// CONVERSATION (Voice)
+// =========================================================
+
+enum ConversationStatus {
+  ACTIVE
+  ENDED
+  ABANDONED
+}
+
+enum ConversationChannel {
+  VOICE
+  CHAT
+}
+
+model Conversation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  visitorId      String
+  visitor        Visitor      @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  sessionId      String?
+  session        Session?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  assignedRepId String?
+  assignedRep   User?   @relation("AssignedRep", fields: [assignedRepId], references: [id], onDelete: SetNull)
+
+  channel ConversationChannel @default(VOICE)
+  status  ConversationStatus  @default(ACTIVE)
+
+  currentStrategy String? // last sales strategy selected by the Strategy Engine
+
+  vapiCallId String? @unique // correlates Vapi webhook events back to this row
+
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  durationSeconds Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages       Message[]
+  scoreSnapshots ConversationScoreSnapshot[]
+  objections     ObjectionLog[]
+  report         Report?
+  lead           Lead?
+
+  @@index([organizationId, status])
+  @@index([visitorId, startedAt])
+}
+
+enum MessageRole {
+  VISITOR
+  AI
+  SYSTEM
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  sequence Int // monotonic order within the conversation, safer than timestamp ties
+  role     MessageRole
+  content  String
+  audioUrl String?
+
+  sentimentScore     Float? // -1..1
+  strategyUsed       String?
+  predictedObjection String?
+
+  // Internal Conversation Brain trace for this turn (context understood, DNA
+  // delta, objection prediction, strategy candidates considered) — powers the
+  // "AI Recommendations" / debugging view without polluting the transcript.
+  reasoningTrace Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, sequence])
+}
+
+model ConversationScoreSnapshot {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  interestScore     Int
+  trustScore        Int
+  buyingProbability Int
+  sentimentScore    Float
+  objectionCount    Int
+
+  capturedAt DateTime @default(now())
+
+  @@index([conversationId, capturedAt])
+}
+
+enum ObjectionType {
+  PRICE
+  TRUST
+  TIMING
+  COMPETITOR
+  FEATURE_GAP
+  AUTHORITY
+  OTHER
+}
+
+model ObjectionLog {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messageId      String?
+
+  type               ObjectionType
+  detail             String?
+  handled            Boolean       @default(false)
+  resolutionStrategy String?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+// =========================================================
+// FINAL SALES REPORT
+// =========================================================
+
+model Report {
+  id             String       @id @default(cuid())
+  conversationId String       @unique
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  transcriptSummary     String
+  salesPerformanceScore Int // 0-100
+  buyingProbability     Int // 0-100
+  dnaSnapshot           Json // frozen copy of the latest CustomerDNA at report time
+  recommendations       Json // string[]
+  missedOpportunities   Json // string[]
+  suggestedFollowUp     Json // { channel, message, suggestedDate }[]
+  crmSummary            Json // structured summary for CRM export (HubSpot/Salesforce-shaped)
+
+  generatedAt DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+// =========================================================
+// LEAD GENERATION
+// =========================================================
+// Structured contact/qualification data, distinct from the behavioral/
+// psychographic CustomerDNA — captured either incrementally by the AI
+// Sales Consultant during a conversation (source: AI_CONVERSATION, merged
+// turn-by-turn in ai/conversationBrain/brain.js) or submitted directly via
+// the marketing site's Book Demo / Contact forms.
+
+enum LeadSource {
+  AI_CONVERSATION
+  BOOK_DEMO_FORM
+  CONTACT_FORM
+  // Post-call lead capture modal (StayConnectedModal) — distinct from
+  // AI_CONVERSATION (the AI's own incremental in-call capture, keyed by
+  // conversationId) since this is the visitor's own follow-up submission
+  // after the call has already ended.
+  VOICE_CALL
+}
+
+// Expanded from the original 5-value set (NEW/CONTACTED/QUALIFIED/CONVERTED/
+// LOST) to the full sales-funnel stages (V2). NEW renamed to NEW_LEAD and
+// CONVERTED renamed to CUSTOMER for clarity against the new stages between
+// them; existing rows were remapped in a data migration before this enum
+// change was applied (see migration history) — Postgres can't rename/drop
+// enum values directly, only add them, so the old values were never actually
+// dropped until every row already held one of the new names.
+enum LeadStatus {
+  NEW_LEAD
+  CONTACTED
+  QUALIFIED
+  DEMO_REQUESTED
+  PROPOSAL_SENT
+  CUSTOMER
+  WON
+  LOST
+}
+
+// "Customer" is not a separate model — a Lead with status CUSTOMER (or WON)
+// *is* the customer record, extended with these fields rather than
+// duplicated into a new table (see currentPlan/revenueOpportunity/owner
+// below). Deliberately small: Starter/Professional/Enterprise, matching the
+// marketing site's actual plan tiers.
+enum PlanTier {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+model Lead {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  visitorId      String?
+  visitor        Visitor?      @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  conversationId String?       @unique
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  name  String?
+  email String?
+  phone String?
+
+  company           String?
+  industry          String?
+  companySize       CompanySize?
+  decisionMaker     Boolean?
+  // Free-text buckets (e.g. "11-50", "$10k-50k/mo") rather than bare numbers —
+  // matches how these are actually volunteered in a sales conversation and
+  // avoids a parse failure if the LLM returns something non-numeric.
+  teamSize          String?
+  budget            String?
+  timeline          String?
+  businessGoals     String?
+  currentProblems   String?
+  interestedService String? // slug into the static marketing-site services catalog
+  // Freeform note — distinct from businessGoals/currentProblems (BookDemo's
+  // structured qualification questions): this is "anything else you'd like
+  // to add" from the post-call capture modal.
+  message           String?
+  // Consent to be contacted, captured at submission time (V2 Phase 3) — kept
+  // as an explicit record rather than only enforced client-side, so there's
+  // an audit trail of what was agreed to and when (createdAt).
+  consentGiven      Boolean      @default(false)
+
+  // Transparent heuristic, not an LLM call — see leadService.computeLeadScore.
+  // Recomputed whenever the conversation's scores update.
+  leadScore Int?
+
+  source LeadSource @default(AI_CONVERSATION)
+  status LeadStatus @default(NEW_LEAD)
+
+  // --- Customer fields (V2) — populated once status reaches CUSTOMER/WON.
+  // Deliberately on Lead rather than a separate Customer table (see the
+  // LeadStatus/PlanTier comments above) so the full history — how this
+  // customer was originally sourced, their conversation, their lead score —
+  // stays on one row instead of being split across two.
+  revenueOpportunity Int? // estimated deal value, whole currency units
+  currentPlan        PlanTier?
+  ownerUserId        String?
+  owner              User?     @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+}
+
+// =========================================================================
+// CUSTOMER DNA ENGINE (services/customer-dna) — an intentionally independent
+// module: an AI-generated behavioral + conversational customer profile, NOT
+// a modification of the existing CustomerDNA (ai/customerDNA) model above.
+// That older model is the voice-call system prompt's qualitative input
+// (LLM-authored personality read, versioned per visitor). This one is a
+// standalone, explainable, deterministically-scored profile aggregated from
+// website behavior + conversation transcripts across the whole customer
+// relationship, exposed via its own /api/customer-dna/* REST surface and
+// consumed by the dashboard/analytics layer — see services/customer-dna/.
+// =========================================================================
+
+enum LeadGrade {
+  A_PLUS
+  A
+  B_PLUS
+  B
+  C
+  D
+}
+
+enum CustomerPersonality {
+  DECISION_MAKER
+  TECHNICAL_BUYER
+  BUSINESS_BUYER
+  RESEARCHER
+  EXPLORER
+  STUDENT
+  ENTERPRISE_BUYER
+}
+
+enum BudgetLevel {
+  LOW
+  MEDIUM
+  HIGH
+  ENTERPRISE
+}
+
+enum RecommendationAction {
+  DEMO
+  PRICING
+  CASE_STUDY
+  ENTERPRISE_PLAN
+  FOLLOW_UP_CALL
+  SCHEDULE_MEETING
+  FREE_TRIAL
+}
+
+model CustomerDnaProfile {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Deliberately plain indexed strings, not hard foreign keys — this module
+  // stays decoupled from the exact shape of Session/Visitor/Conversation so
+  // any calling surface (voice bot, website widget, a future channel) can
+  // key a profile off whatever session/customer identifier it has, without
+  // this table needing a migration if the upstream schema changes.
+  sessionId  String
+  customerId String
+
+  interestScore     Int // 0-100
+  trustScore        Int // 0-100
+  engagementScore   Int // 0-100
+  buyingProbability Int // 0-100
+
+  leadGrade   LeadGrade
+  intentLevel IntentLevel
+
+  personality        CustomerPersonality
+  communicationStyle CommunicationStyle
+  preferredLanguage  String              @default("en")
+
+  budgetLevel BudgetLevel?
+  companySize CompanySize?
+  industry    String?
+
+  painPoints         String[]
+  productsInterested String[]
+  objections         String[]
+  recommendations    RecommendationAction[]
+  nextBestAction     RecommendationAction
+
+  conversationSummary String?
+  // 0-1 — how much real signal (behavior + conversation) backs this profile;
+  // see scoringConfig.js / leadScoring.js for the exact formula.
+  confidence          Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, customerId])
+  @@index([organizationId, sessionId])
+  @@index([organizationId, leadGrade])
+  @@map("customer_dna")
+}

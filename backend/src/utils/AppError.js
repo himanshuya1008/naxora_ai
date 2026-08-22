@@ -1,0 +1,41 @@
+// Distinguishes expected, handled failures (bad input, missing resource,
+// unauthorized) from programming errors/bugs — only AppErrors are safe to
+// surface their message to the client; anything else becomes a generic
+// 500 in the error handler.
+export class AppError extends Error {
+  constructor(message, statusCode, code = 'ERROR') {
+    super(message);
+    this.statusCode = statusCode;
+    this.code = code;
+    this.isOperational = true;
+    Error.captureStackTrace(this, this.constructor);
+  }
+
+  static badRequest(message, code = 'BAD_REQUEST') {
+    return new AppError(message, 400, code);
+  }
+
+  static unauthorized(message = 'Unauthorized', code = 'UNAUTHORIZED') {
+    return new AppError(message, 401, code);
+  }
+
+  static forbidden(message = 'Forbidden', code = 'FORBIDDEN') {
+    return new AppError(message, 403, code);
+  }
+
+  static notFound(message = 'Resource not found', code = 'NOT_FOUND') {
+    return new AppError(message, 404, code);
+  }
+
+  static conflict(message, code = 'CONFLICT') {
+    return new AppError(message, 409, code);
+  }
+
+  static tooManyRequests(message = 'Too many requests', code = 'RATE_LIMITED') {
+    return new AppError(message, 429, code);
+  }
+
+  static internal(message = 'Internal server error', code = 'INTERNAL_ERROR') {
+    return new AppError(message, 500, code);
+  }
+}

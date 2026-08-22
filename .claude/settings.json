@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//var/cache/apt/archives/**)",
+      "Bash(dpkg -l)",
+      "Bash(LD_LIBRARY_PATH=/tmp/claude-1000/extracted-libs/usr/lib/x86_64-linux-gnu node nexora_full_run.mjs)",
+      "Bash(npm run *)",
+      "Bash(disown)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('three:', p.dependencies.three\\); console.log\\('fiber:', p.dependencies['@react-three/fiber']\\); console.log\\('drei:', p.dependencies['@react-three/drei']\\);\")",
+      "Bash(echo \"BUILD_EXIT:$?\")",
+      "Bash(curl -s -o /dev/null -w \"frontend:%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"LiveAiOrb.jsx via vite: %{http_code}\\\\n\" \"http://localhost:5173/src/components/illustrations/LiveAiOrb.jsx\")",
+      "Bash(echo \"LINT_EXIT:$?\")",
+      "Bash(timeout 5 bash -c \"cat < /dev/null > /dev/tcp/172.29.16.1/5432\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5000/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"console.log\\(process.env.GEMINI_API_KEY ? 'set' : 'unset'\\)\")",
+      "Bash(timeout 100 node -e ' *)",
+      "Bash(curl -s http://localhost:5000/api/health)"
+    ]
+  }
+}

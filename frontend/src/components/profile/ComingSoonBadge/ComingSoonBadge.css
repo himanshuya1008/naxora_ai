@@ -1,0 +1,13 @@
+.coming-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(17, 24, 39, 0.22);
+  background: rgba(17, 24, 39, 0.06);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}

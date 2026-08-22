@@ -1,0 +1,29 @@
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 56rem;
+}
+
+.profile-page__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+.profile-page__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 56rem;
+}
+
+.profile-page__skeleton-header {
+  height: 8.5rem;
+  border-radius: var(--radius-xl);
+}
+
+.profile-page__skeleton-card {
+  height: 14rem;
+  border-radius: var(--radius-xl);
+}

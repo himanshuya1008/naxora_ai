@@ -1,0 +1,82 @@
+.video-showcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-5);
+}
+
+.video-showcase__card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: var(--radius-lg);
+  background: rgba(17, 24, 39, 0.06);
+  overflow: hidden;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  transition: border-color var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+}
+
+.video-showcase__card:hover {
+  border-color: rgba(96, 165, 250, 0.3);
+  transform: translateY(-3px);
+}
+
+.video-showcase__thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.35), transparent 55%),
+    radial-gradient(circle at 80% 80%, rgba(96, 165, 250, 0.25), transparent 55%), var(--color-bg-800);
+  overflow: hidden;
+}
+
+.video-showcase__thumb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(17, 24, 39, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(17, 24, 39, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at center, black, transparent 75%);
+}
+
+.video-showcase__play {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.14);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(17, 24, 39, 0.33);
+  color: white;
+  transition: transform var(--duration-base) var(--ease-out), background var(--duration-base) var(--ease-out);
+}
+
+.video-showcase__card:hover .video-showcase__play {
+  transform: scale(1.08);
+  background: rgba(59, 130, 246, 0.35);
+}
+
+.video-showcase__body {
+  padding: var(--space-5);
+}
+
+.video-showcase__title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.video-showcase__description {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text-faint);
+}
