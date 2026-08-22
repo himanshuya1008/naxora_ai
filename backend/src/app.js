@@ -17,11 +17,23 @@ export function createApp() {
 
   app.set('trust proxy', 1); // required for correct client IPs / rate limiting behind Render's proxy
 
-  app.use(helmet());
+  const allowedOrigins = Array.isArray(env.ALLOWED_ORIGINS) ? env.ALLOWED_ORIGINS : [env.ALLOWED_ORIGINS];
+
   app.use(
     cors({
-      origin: env.ALLOWED_ORIGINS,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || origin === env.CLIENT_URL) {
+          return callback(null, true);
+        }
+        if (/^https:\/\/.*\.vercel\.app$/.test(origin) || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-Requested-With'],
     })
   );
   app.use(compression());

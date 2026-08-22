@@ -5,8 +5,22 @@ import { logger } from '../utils/logger.js';
 import { registerConversationHandlers } from './conversationSocket.js';
 
 export function initSocketServer(httpServer) {
+  const allowedOrigins = Array.isArray(env.ALLOWED_ORIGINS) ? env.ALLOWED_ORIGINS : [env.ALLOWED_ORIGINS];
+
   const io = new Server(httpServer, {
-    cors: { origin: env.ALLOWED_ORIGINS, credentials: true },
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || origin === env.CLIENT_URL) {
+          return callback(null, true);
+        }
+        if (/^https:\/\/.*\.vercel\.app$/.test(origin) || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
+      credentials: true,
+    },
     maxHttpBufferSize: 5 * 1024 * 1024, // audio chunks are binary; allow generous frame size
   });
 
